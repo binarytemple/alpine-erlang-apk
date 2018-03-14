@@ -1,0 +1,139 @@
+# Contributor: Michael Mason <ms13sp@gmail.com>
+# Contributor: Gabriele Santomaggio <g.santomaggio@gmail.com>
+# Contributor: Marlus Saraiva <marlus.saraiva@gmail.com>
+# Maintainer: William Pitcock <nenolod@dereferenced.org>
+pkgname=erlang
+pkgver=20.2.3
+_srcver=$pkgver
+pkgrel=6
+pkgdesc="General-purpose programming language and runtime environment"
+url="http://www.erlang.org/"
+license="Apache-2.0"
+arch="all"
+depends="$pkgname-kernel $pkgname-stdlib $pkgname-compiler"
+makedepends="perl-dev zlib-dev ncurses-dev openjdk8 unixodbc-dev
+	autoconf wxgtk-dev glu-dev"
+options="!check"
+source="https://github.com/erlang/otp/archive/OTP-$_srcver.tar.gz
+        0005-Do-not-install-nteventlog-and-related-doc-files-on-n.patch
+        0010-fix-nteventlog-remove.patch
+        0011-fix-libressl-build.patch"
+
+builddir="$srcdir/otp-OTP-$_srcver"
+
+prepare() {
+	default_prepare || return 1
+
+	cd "$builddir"
+	#rm lib/os_mon/ebin/*
+}
+
+build() {
+	cd "$builddir"
+	export CPPFLAGS="-D_BSD_SOURCE $CPPFLAGS"
+	export PATH="/usr/lib/jvm/java-1.8-openjdk/bin:$PATH"
+	./otp_build autoconf 	
+	./configure --prefix=/usr \
+		--build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
+      		--sysconfdir=/etc \
+      		--mandir=/usr/share/man \
+      		--infodir=/usr/share/info \
+      		--enable-shared-zlib \
+      		--enable-ssl=dynamic-ssl-lib \
+      		--enable-threads \
+      		--sysconfdir=/etc \
+      		--without-cosEventDomain \
+      		--without-cosEvent\
+      		--without-cosFileTransfer \
+      		--without-cosNotification \
+      		--without-cosProperty \
+      		--without-cosTime \
+      		--without-cosTransactions \
+		--without-debugger \
+      		--without-et \
+      		--without-gs \
+      		--without-ic \
+      		--without-javac \
+      		--without-jinterface \
+      		--without-megaco \
+      		--without-observer \
+      		--without-orber \
+      		--without-percept \
+      		--without-typer \
+      		--without-wx \
+		|| return 1
+#	./otp_build boot -a || return 1 
+#	./otp_build release -a || return 1
+	make -j4 release || return 1
+}
+
+package() {
+	cd "$builddir"
+	make -j1 DESTDIR="$pkgdir" install || return 1
+}
+
+_mv_erlang_lib() {
+	local lib=$1
+	case "$depends" in
+	*$subpkgname*)	depends="";;
+	*)		depends="$pkgname=$pkgver-r$pkgrel";;
+	esac
+
+	mkdir -p "$subpkgdir"/usr/lib/erlang/lib
+        rm -f "$pkgdir"/usr/lib/erlang/lib/$lib-*/src/*.erl
+	mv "$pkgdir"/usr/lib/erlang/lib/$lib-* "$subpkgdir"/usr/lib/erlang/lib/
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+dev() {
+	set -x
+	local i= j=
+	depends="$pkgname=$pkgver-r$pkgrel $depends_dev"
+	pkgdesc="$pkgdesc (development files)"
+
+	cd "$pkgdir" || return 0
+	local libdirs=usr/
+	[ -d lib/ ] && libdirs="lib/ $libdirs"
+	for i in usr/include usr/lib/pkgconfig usr/share/aclocal\
+			usr/share/gettext usr/bin/*-config	\
+			usr/share/vala/vapi usr/share/gir-[0-9]*\
+			usr/share/qt*/mkspecs			\
+			usr/lib/qt*/mkspecs			\
+			usr/lib/cmake				\
+			$(find . -name include -type d) 	\
+			$(find $libdirs -name '*.[acho]' \
+				-o -name '*.prl' 2>/dev/null); do
+		if [ -e "$pkgdir/$i" ] || [ -L "$pkgdir/$i" ]; then
+			d="$subpkgdir/${i%/*}"	# dirname $i
+			mkdir -p "$d"
+			mv "$pkgdir/$i" "$d"
+			rmdir "$pkgdir/${i%/*}" 2>/dev/null || true
+		fi
+	done
+	# move *.so links needed when linking the apps to -dev packages
+	for i in lib/*.so usr/lib/*.so; do
+		if [ -L "$i" ]; then
+			mkdir -p "$subpkgdir"/"${i%/*}"
+			mv "$i" "$subpkgdir/$i" || return 1
+		fi
+	done
+	return 0
+}
+
+
+sha512sums="54dd81041635d14c8c4c05e31a70017ae5c501c91e5071875711cad460c4f21572f586eb3faeeb6e400b888f32a56859e066ea049877356f02f8cab43d3e6207  OTP-20.2.3.tar.gz
+5d377faccd73382bc86c5aa3182767bc5d1639220c78c2f624135f597f3c823a6871ff13f6f8a109baa8a9ae5d215233b40193e5cfe07af275aa53f327e956de  0005-Do-not-install-nteventlog-and-related-doc-files-on-n.patch
+bb4346dabe17115bc310837c5f0aeb367a745d8ba2159495084e599d0419fc57648d144c811306914ac48d0e087d6150a356f38640ba070642b4578acc5fe573  0010-fix-nteventlog-remove.patch
+7af01ed80312621844a249fbcaff84955c8d4d0a2a25382242e7dbeffddc835b9d359c0d47b7fc649ac47644f972e4271adf820527dba34cb1a5abed03422de9  0011-fix-libressl-build.patch"
