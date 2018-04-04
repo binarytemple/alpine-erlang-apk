@@ -9,3 +9,6 @@ build: setup-apk-cache
 
 run:
 	docker run  --network ci -ti bryanhuntesl/alpine-erlang-builder
+
+extract: build
+	docker run -v $(shell pwd):/target --network ci -ti bryanhuntesl/alpine-erlang-builder cp -pr ./packages /target/
