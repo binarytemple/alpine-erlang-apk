@@ -10,7 +10,8 @@ pkgdesc="General-purpose programming language and runtime environment"
 url="http://www.erlang.org/"
 license="Apache-2.0"
 arch="all"
-depends="$pkgname-kernel $pkgname-stdlib $pkgname-compiler"
+#depends="$pkgname-kernel $pkgname-stdlib $pkgname-compiler"
+depends=""
 makedepends="perl-dev zlib-dev ncurses-dev openjdk8 unixodbc-dev
 	autoconf wxgtk-dev glu-dev"
 #subpackages="$pkgname-dev

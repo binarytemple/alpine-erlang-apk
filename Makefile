@@ -8,4 +8,4 @@ build: setup-apk-cache
 	docker build --network ci --tag bryanhuntesl/alpine-erlang-builder .
 
 run:
-	docker run  --network ci -ti bryanhuntesl/alpine-erlang-builder /bin/bash
+	docker run  --network ci -ti bryanhuntesl/alpine-erlang-builder
