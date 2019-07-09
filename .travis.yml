@@ -1,0 +1,8 @@
+before_install: 
+  - docker pull alpine:latest
+
+env:
+  - ERLANG_COOKIE=foo
+
+script:
+  - make build
