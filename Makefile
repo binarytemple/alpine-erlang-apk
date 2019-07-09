@@ -1,8 +1,10 @@
 setup-network:
-	docker network ls | awk '!/NET/{print $$2}' | grep ci > /dev/null
+	docker network ls | awk '!/NET/{print $$2}' | grep ci > /dev/null \
+		|| docker network create ci
 
 setup-volume:
-	docker volume ls | grep 'apk_cache$$' > /dev/null || docker volume create apk_cache
+	docker volume ls | grep 'apk_cache$$' > /dev/null \
+		|| docker volume create apk_cache
 
 setup-apk-cache: setup-network setup-volume
 	docker ps \
